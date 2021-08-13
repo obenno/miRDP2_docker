@@ -43,7 +43,7 @@ bowtie-build -f ./miRDP2_ncRNA_rfam_v14.5.fa ./index/rfam_index
 
 The `rfam_index` was prepared and packaged into the image.
 
-### Known RNA 
+### Known miRNA 
 
 If refFile provided, miRNA will be compared with reference set, and be named accordingly
 The refFile should contain 6 columns: 5p_seq, 3p_seq, 5p_name, 3p_name, precursor_name, precursor_seq
