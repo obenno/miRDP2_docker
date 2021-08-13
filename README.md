@@ -49,7 +49,7 @@ If refFile provided, miRNA will be compared with reference set, and be named acc
 The refFile should contain 6 columns: 5p_seq, 3p_seq, 5p_name, 3p_name, precursor_name, precursor_seq
 all known miRNA should be sorted and uniqufied by 5p_seq, 3p_seq (bedtools groupby)
 
-example for prepare refFile from PmiREN2.0 soybean known miRs
+example for prepare refFile from [PmiREN2.0 soybean known miRs](https://www.pmiren.com/ftp-download/Glycine_max_Gma/Glycine_max_basicInfo.txt)
 
 ```
 cut -f 1,13,15,18,19,22 Glycine_max_basicInfo.txt |
