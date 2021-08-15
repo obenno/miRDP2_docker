@@ -148,7 +148,7 @@ if [[ ! -z $input ]] || [[ -f $batch ]]; then
         formattedInput=$(mktemp -p $results_folder "formatted.XXXXXXXXXX")
         if [[ $trim == "true" ]]; then
             inputTrimmed=$(mktemp -p $results_folder ${input%%.[fq|fa]*}".trimmed.XXXXXXXXXX")
-            cutadapt -a $adapter -j $thread -o $inputTrimmed $input >> $results_folder/${filename}/script_err
+            cutadapt -a $adapter -j $thread --fasta -o $inputTrimmed $input >> $results_folder/${filename}/script_err
             fastx_collapser -Q33 -i $inputTrimmed |
                 awk '{if($1~/^>/){id=substr($1,2); split(id, tmp, "-"); print ">read"tmp[1]"_x"tmp[2]}else{print}}' > $formattedInput
         else
@@ -159,7 +159,7 @@ if [[ ! -z $input ]] || [[ -f $batch ]]; then
         formattedInput=$(mktemp -p $results_folder "formatted.XXXXXXXXXX")
         if [[ $trim == "true" ]]; then
             inputTrimmed=$(mktemp -p $results_folder ${input%%.[fq|fa]*}".trimmed.XXXXXXXXXX")
-            cutadapt -a $adapter -j $thread -o $inputTrimmed $input >> $results_folder/${filename}/script_err
+            cutadapt -a $adapter -j $thread --fasta -o $inputTrimmed $input >> $results_folder/${filename}/script_err
             fastx_collapser -Q33 -i $inputTrimmed |
                 awk '{if($1~/^>/){id=substr($1,2); split(id, tmp, "-"); print ">read"tmp[1]"_x"tmp[2]}else{print}}' > $formattedInput
         else
@@ -173,7 +173,7 @@ if [[ ! -z $input ]] || [[ -f $batch ]]; then
             for i in $(cat $batch);
             do
                 tmpTrimmed=$(mktemp -p $results_folder ${i%%.[fq|fa]*}".trimmed.XXXXXXXXXX")
-                cutadapt -a $adapter -j $thread -o $tmpTrimmed $i >> $results_folder/${filename}/script_err
+                cutadapt -a $adapter -j $thread --fasta -o $tmpTrimmed $i >> $results_folder/${filename}/script_err
                 echo $tmpTrimmed >> $batchTrimmed
             done
             awk 'BEGIN{a=""}{a=a" "$1}END{print "cat "a}' $batchTrimmed |
@@ -464,7 +464,8 @@ function process_each_sample {
     local inputProcessed=$(mktemp -p $results_folder)
     local ncRNA_out=$(mktemp -p $results_folder)
     local bowtieFormatTag=""
-    local sampleName=${inputFile%%.[fq|fa]*}
+    local inputFileName=$(basename $inputFile)
+    local sampleName=${inputFileName%%.[fq|fa]*}
 
     if [[ $inputFile =~ .(fa|fasta).gz$ ]] || [[ $inputFile =~ .(fa|fasta)$ ]]; then
         bowtieFormatTag="-f"
@@ -515,14 +516,14 @@ if [[ ! -z $input ]] || [[ -f $batch ]]; then
     elif [[ $input =~ .(fq|fastq).gz$ && $tag == "q" ]]; then
         ## Assume single library fastq
         if [[ $trim == "true" ]]; then
-            process_each_sample $inputTrimmed
+            process_each_sample $inputTrimmed "-f"
         else
             process_each_sample $input
         fi
     elif [[ $input =~ .(fq|fastq)$ && $tag == "q" ]]; then
         ## Assume single library fastq
         if [[ $trim == "true" ]]; then
-            process_each_sample $inputTrimmed
+            process_each_sample $inputTrimmed "-f"
         else
             process_each_sample $input
         fi
@@ -554,7 +555,7 @@ tmpExpr2=$(mktemp -p $results_folder)
 awk 'BEGIN{print "id\tfamily\tmature_seq"}{print}' $expr_c1 > $tmpExpr1
 for i in $results_folder/${filename}/*.expr.tsv;
 do
-    sampleID=$(basename ${i%%.expr.tsv})
+    sampleID=$(basename "$i" .expr.tsv)
     awk '
     NR==FNR{a[$1"\t"$2"\t"$3]=$4}
     NR>FNR&&FNR==1{print $0"\t'$sampleID'"}
