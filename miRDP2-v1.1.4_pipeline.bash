@@ -545,8 +545,10 @@ if [[ ! -z $batchTrimmed ]]; then
     awk 'BEGIN{a=""}{a=a" "$1}END{print "rm "a}' $batchTrimmed |
         bash
     rm $batchTrimmed
-else
+elif [[ $trim == "true" ]]; then
     rm $inputTrimmed
+else
+    true # pass
 fi
 
 ## Merge Expr table
