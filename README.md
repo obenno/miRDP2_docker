@@ -80,6 +80,8 @@ docker run -it -d --rm -v /home/ubuntu/data/database/Gmax_508_Wm82.a4.v1/assembl
            -t -d /data/mature_precursor_seq.tsv -p 40 -o /data/OutputDir
 ```
 
+Please remember to add `-q` when using single `fq`, `fastq`, `fq.gz` or `fastq.gz` file as input.
+
 ## Full Options
 
 Main script is modified from miRDP2 v1.1.4.
