@@ -82,6 +82,24 @@ docker run -it -d --rm -v /home/ubuntu/data/database/Gmax_508_Wm82.a4.v1/assembl
 
 Please remember to add `-q` when using single `fq`, `fastq`, `fq.gz` or `fastq.gz` file as input.
 
+## Output Files
+
+The two major outputs are `merged_out_filter_P_prediction_reformatted_withFamilyInfo.tsv` and `combined.expr.tsv`.
+The former one contains detail information of miRNA loci, while the latter one contains the
+CPM/TPM expressions of mature miRNAs.
+
+Header of `merged_out_filter_P_prediction_reformatted_withFamilyInfo.tsv`:
+
+| Known/Novel | Locus ID | Locus Position | 5-prime Mature Family | 5-prime Mature Sequence | 5-prime Representative Reads ID | 3-prime Mature Family | 3-prime Mature Sequence | 3-prime Representative Reads ID | Precusor Family | Precusor Sequence |
+| ---         | ---      | ---            | ---                   | ---                     | ---                             | ---                   | ---                     | ---                             | ---             | ---               |
+
+
+Header of `combined.expr.tsv`:
+
+| Mature Seq ID | miRNA Family | Mature Sequence | Sample IDs |
+| ---           | ---          | ---             | ---        |
+
+
 ## Full Options
 
 Main script is modified from miRDP2 v1.1.4.
