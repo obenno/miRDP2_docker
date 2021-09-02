@@ -66,6 +66,17 @@ cut -f 1,13,15,18,19,22 Glycine_max_basicInfo.txt |
     bedtools groupby -g 2,4 -c 1,3,5,6 -o collapse > mature_precursor_seq.tsv
 ```
 
+### Genome bowtie index
+
+Genome fasta file has to be indexed by bowtie before running. The index file name (prefix) could be passed to option `-x`. 
+
+Example for soybean genome:
+
+```
+cd /home/ubuntu/data/database/Gmax_508_Wm82.a4.v1/assembly
+bowtie-build --threads 30 Gmax_508_v4.0.fa Gmax_508_v4.0.fa
+```
+
 ## Running Command
 
 Assume the input files are in the current directory, the reference genome and its bowtie idnex file are
