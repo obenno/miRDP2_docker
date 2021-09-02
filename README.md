@@ -17,7 +17,9 @@ Pages 2521–2522, https://doi.org/10.1093/bioinformatics/bty972
 
 ## Image
 
-docker pull obenno/mirdp2_pipeline
+```
+docker pull obenno/mirdp2_pipeline:0.01
+```
 
 ## Data preparation
 
