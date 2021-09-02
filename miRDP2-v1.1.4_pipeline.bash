@@ -148,7 +148,7 @@ if [[ ! -z $input ]] || [[ -f $batch ]]; then
         formattedInput=$(mktemp -p $results_folder "formatted.XXXXXXXXXX")
         if [[ $trim == "true" ]]; then
             inputTrimmed=$(mktemp -p $results_folder ${input%%.[fq|fa]*}".trimmed.XXXXXXXXXX")
-            cutadapt -a $adapter -j $thread --fasta -o $inputTrimmed $input >> $results_folder/${filename}/script_err
+            cutadapt -a $adapter -j $thread --fasta -m 15 -o $inputTrimmed $input >> $results_folder/${filename}/script_err
             fastx_collapser -Q33 -i $inputTrimmed |
                 awk '{if($1~/^>/){id=substr($1,2); split(id, tmp, "-"); print ">read"tmp[1]"_x"tmp[2]}else{print}}' > $formattedInput
         else
@@ -159,7 +159,7 @@ if [[ ! -z $input ]] || [[ -f $batch ]]; then
         formattedInput=$(mktemp -p $results_folder "formatted.XXXXXXXXXX")
         if [[ $trim == "true" ]]; then
             inputTrimmed=$(mktemp -p $results_folder ${input%%.[fq|fa]*}".trimmed.XXXXXXXXXX")
-            cutadapt -a $adapter -j $thread --fasta -o $inputTrimmed $input >> $results_folder/${filename}/script_err
+            cutadapt -a $adapter -j $thread --fasta -m 15 -o $inputTrimmed $input >> $results_folder/${filename}/script_err
             fastx_collapser -Q33 -i $inputTrimmed |
                 awk '{if($1~/^>/){id=substr($1,2); split(id, tmp, "-"); print ">read"tmp[1]"_x"tmp[2]}else{print}}' > $formattedInput
         else
@@ -173,7 +173,7 @@ if [[ ! -z $input ]] || [[ -f $batch ]]; then
             for i in $(cat $batch);
             do
                 tmpTrimmed=$(mktemp -p $results_folder ${i%%.[fq|fa]*}".trimmed.XXXXXXXXXX")
-                cutadapt -a $adapter -j $thread --fasta -o $tmpTrimmed $i >> $results_folder/${filename}/script_err
+                cutadapt -a $adapter -j $thread --fasta -m 15 -o $tmpTrimmed $i >> $results_folder/${filename}/script_err
                 echo $tmpTrimmed >> $batchTrimmed
             done
             awk 'BEGIN{a=""}{a=a" "$1}END{print "cat "a}' $batchTrimmed |
