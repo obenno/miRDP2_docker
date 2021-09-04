@@ -247,12 +247,35 @@ if [ $bt2tag == "false" ]; then
          2>> $results_folder/${filename}/${filename}_err
     ## $results_folder/${filename}/${filename}-processed.fa is filtered by
     ## 1. ncRNA
-    ## 2. length (18, 24)
+    ## 2. length (19, 24)
     ## 3. mapped to known mature.fa from mirbase or CPM > criteria
     ## will be used for excise precursor
 
     ## $results_folder/${filename}/${filename}.fa is only filtered by the
     ## first two criterias, will be used as signature and be mapped to precursor
+
+    ## Exit if no reads passed criteria
+    if [[ ! -s ${filename}-processed.fa ]];
+    then
+        echo "No reads passed criteria, so exited here.
+Criteria:
+1. no match in ncRNA database
+2. seq length >=19 and <= 24
+3. mapped to known mature.fa from mirbase or CPM>=10" >> $results_folder/${filename}/script_err
+        ## Delete temp files
+        if [[ ! -z $batchTrimmed ]]; then
+            awk 'BEGIN{a=""}{a=a" "$1}END{print "rm "a}' $batchTrimmed |
+                bash
+            rm $batchTrimmed
+        elif [[ $trim == "true" ]]; then
+            rm $inputTrimmed
+        else
+            true # pass
+        fi
+        rm $formattedInput_filtered $formattedInput
+        echo "Pipeline finished" $(date +[\ %F\ %X\ ]) >> $results_folder/${filename}/progress_log
+        exit 0
+    fi
 
     #mapping filtered reads
     echo "Mapping filtered reads to genome to excise precursors:" >> $results_folder/${filename}/script_err
@@ -465,7 +488,12 @@ function process_each_sample {
     local ncRNA_out=$(mktemp -p $results_folder)
     local bowtieFormatTag=""
     local inputFileName=$(basename $inputFile)
-    local sampleName=${inputFileName%%.[fq|fa]*}
+    if [[ $inputFileName =~ "trimmed" ]];
+    then
+        local sampleName=${inputFileName%%.trimmed*}
+    else
+        local sampleName=${inputFileName%%.[fq|fa]*}
+    fi
 
     if [[ $inputFile =~ .(fa|fasta).gz$ ]] || [[ $inputFile =~ .(fa|fasta)$ ]]; then
         bowtieFormatTag="-f"
