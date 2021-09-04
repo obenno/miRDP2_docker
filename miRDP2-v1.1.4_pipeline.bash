@@ -201,6 +201,53 @@ formattedInput_filtered=$(mktemp -p $results_folder "formattedFiltered.XXXXXXXXX
 fasta_formatter -t -i $formattedInput |
     awk '{quant=substr($1, index($1, "_x")+2)+0; if(quant>=5){print ">"$1"\n"$2}}' > $formattedInput_filtered
 
+function only_map_sample {
+    ## This function will just map reads file to genome
+    ## and save bam result, no matter 
+    local inputFile=$1
+    local inputFormat=$2
+    local ncRNA_out=$(mktemp -p $results_folder)
+    local bowtieFormatTag=""
+    local inputFileName=$(basename $inputFile)
+    if [[ $inputFileName =~ "trimmed" ]];
+    then
+        local sampleName=${inputFileName%%.trimmed*}
+    else
+        local sampleName=${inputFileName%%.[fq|fa]*}
+    fi
+
+    if [[ $inputFile =~ .(fa|fasta).gz$ ]] || [[ $inputFile =~ .(fa|fasta)$ ]]; then
+        bowtieFormatTag="-f"
+    elif [[ $inputFile =~ .(fq|fastq).gz$ ]] || [[ $inputFile =~ .(fq|fastq)$ ]]; then
+        bowtieFormatTag="-q"
+    elif [[ ! -z $inputFormat ]]; then
+        bowtieFormatTag=$inputFormat
+    else
+        echo "The input format should be .fa, .fasta, .fq or .fastq, or formatTag should be provided."
+        exit 1
+    fi
+    ## map to rfam_ncRNA, remove reads with hits
+    bowtie -v 0 \
+           -x $mirdp/index/rfam_index \
+           -p $thread \
+           $bowtieFormatTag $inputFile |
+            awk '{print $1}' |
+            sort -u > $ncRNA_out
+    bowtie -v $var $large \
+           -m $len \
+           -x $bowtie_index \
+           -p $thread \
+           -S \
+           $bowtieFormatTag $inputFile |
+        awk '
+            NR==FNR{a[$1]}
+            NR>FNR{if($1~/^@/){print}else{if(!($1 in a)){print}}}
+            ' $ncRNA_out - |
+        samtools view -@ $thread -b > $results_folder/${filename}/${sampleName}.bam
+    rm $ncRNA_out
+}
+
+
 if [ $bt2tag == "false" ]; then
     #filter reads -- mapping to ncRNA seq (rRNA, tRNA, etc)
     echo "Mapping reads to rfam ncRNAs (rRNA, tRNA, snRNA, snoRNA): " >> $results_folder/${filename}/script_err
@@ -257,7 +304,41 @@ if [ $bt2tag == "false" ]; then
     ## Exit if no reads passed criteria
     if [[ ! -s ${filename}-processed.fa ]];
     then
-        echo "No reads passed criteria, so exited here.
+        ## Only map reads to genome then exit
+        if [[ ! -z $input ]] || [[ -f $batch ]]; then
+            if [[ $input =~ .gz$ && tag == "f" ]]; then
+                ## assume formatted input provided, do not estimate expression
+                true # PASS
+            elif [[ $input =~ .(fa|fasta)$ && $tag == "f" ]]; then
+                ## assume formatted input provided, do not estimate expression
+                true # PASS
+            elif [[ $input =~ .(fq|fastq).gz$ && $tag == "q" ]]; then
+                ## Assume single library fastq
+                if [[ $trim == "true" ]]; then
+                    only_map_sample $inputTrimmed "-f"
+                else
+                    only_map_sample $input
+                fi
+            elif [[ $input =~ .(fq|fastq)$ && $tag == "q" ]]; then
+                ## Assume single library fastq
+                if [[ $trim == "true" ]]; then
+                    only_map_sample $inputTrimmed "-f"
+                else
+                    only_map_sample $input
+                fi
+            elif [[ -f $batch ]]; then
+                ## Multiple libraries fasta/fastq(.gz)
+                if [[ $trim == "true" ]]; then
+                    for i in $(cat $batchTrimmed); do only_map_sample $i "-f"; done
+                else
+                    for i in $(cat $batch); do only_map_sample $i; done
+                fi
+            else
+                echo "Either '--input' or '--batch' option is not valid."
+                exit 1
+            fi
+        fi
+        echo "No reads passed criteria, reads will be mapped to genome and pipeline will exit here.
 Criteria:
 1. no match in ncRNA database
 2. seq length >=19 and <= 24
@@ -481,7 +562,8 @@ expr_c1=$(mktemp -p $results_folder)
 awk '{if($6!="NA"){print $2"-5p\t"$4"\t"$5}; if($9!="NA"){print $2"-3p\t"$7"\t"$8}}' $results_folder/${filename}/${filename}_filter_P_prediction_reformatted_withFamilyInfo.tsv > $expr_c1
 
 function process_each_sample {
-
+    ## Process each sample to
+    ## generate bam result and expression table
     local inputFile=$1
     local inputFormat=$2
     local inputProcessed=$(mktemp -p $results_folder)
