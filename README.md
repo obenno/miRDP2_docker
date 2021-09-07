@@ -85,7 +85,7 @@ bound to `/data`, and folder containing reference genome and index will be bound
 genome file is `Gmax_508_v4.0.fa`, and its index name is also `Gmax_508_v4.0.fa`.
 
 ```
-docker run -it -d --rm -v /home/ubuntu/data/database/Gmax_508_Wm82.a4.v1/assembly:/database \
+docker run -d --rm -v /home/ubuntu/data/database/Gmax_508_Wm82.a4.v1/assembly:/database \
            -v $(pwd):/data -u $(echo $UID):1000 obenno/mirdp2_pipeline:0.01 \
            -g /database/Gmax_508_v4.0.fa \
            -x /database/Gmax_508_v4.0.fa \
