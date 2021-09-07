@@ -65,7 +65,7 @@ do
     -f|--fasta)   tag="f"; shift;;	#input fasta seq file
 	-q|--fastq)   tag="q"; shift;;  #input fastq seq file
     -t|--trim)    trim="true"; shift;;
-    -a|--adapter) adapter=$2; shift;;
+    -a|--adapter) adapter=$2; shift 2;;
 	-i|--input)   input=$2; shift 2;;  #input file(s)
 	-b|--batch)   batch=$2; shift 2;;  #input file list file
     -o|--output)  results_folder=$2; shift 2;;	#output folder; default is `.'
