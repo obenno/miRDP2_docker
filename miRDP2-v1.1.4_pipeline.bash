@@ -201,6 +201,11 @@ formattedInput_filtered=$(mktemp -p $results_folder "formattedFiltered.XXXXXXXXX
 fasta_formatter -t -i $formattedInput |
     awk '{quant=substr($1, index($1, "_x")+2)+0; if(quant>=5){print ">"$1"\n"$2}}' > $formattedInput_filtered
 
+## Print filtered sequence length to script_err for debugging adapter sequence
+fasta_formatter -t -i $formattedInput_filtered | awk '{print length($2)}' | sort |
+    uniq -c |
+    awk 'BEGIN{print "Filtered sequence length distribution:\nseq_len\tcount"}{print $2"\t"$1}' >> $results_folder/${filename}/script_err
+
 function only_map_sample {
     ## This function will just map reads file to genome
     ## and save bam result, no matter 
@@ -227,6 +232,7 @@ function only_map_sample {
         exit 1
     fi
     ## map to rfam_ncRNA, remove reads with hits
+    echo "${sampleName}:" >> $results_folder/${filename}/script_err
     bowtie -v 0 \
            -x $mirdp/index/rfam_index \
            -p $thread \
@@ -238,7 +244,7 @@ function only_map_sample {
            -x $bowtie_index \
            -p $thread \
            -S \
-           $bowtieFormatTag $inputFile |
+           $bowtieFormatTag $inputFile 2>> $results_folder/${filename}/script_err |
         awk '
             NR==FNR{a[$1]}
             NR>FNR{if($1~/^@/){print}else{if(!($1 in a)){print}}}
@@ -284,7 +290,7 @@ if [ $bt2tag == "false" ]; then
     ## 
     ## fasta_formatter -t -i $results_folder/{filename}/${filename}-processed.fa |
     ##     awk 'BEGIN{a=0}{split($1,tmp,"_x"); a+=tmp[2]}END{print a}' > $results_folder/${filename}/${filename}.total_reads
-
+    echo "Filtering reads with preprocess_reads.pl." >> $results_folder/${filename}/script_err
     perl $mirdp/preprocess_reads.pl $formattedInput_filtered $results_folder/${filename}/rfam_reads.aln \
          $results_folder/${filename}/known_miR.aln \
          $threshold \
@@ -292,6 +298,7 @@ if [ $bt2tag == "false" ]; then
          $results_folder/${filename}/${filename}-processed.fa \
          $results_folder/${filename}/${filename}.total_reads \
          2>> $results_folder/${filename}/${filename}_err
+    echo "There are $(wc -l $results_folder/${filename}/${filename}-processed.fa|awk '{print $1}') sequences after filtration" >> $results_folder/${filename}/script_err
     ## $results_folder/${filename}/${filename}-processed.fa is filtered by
     ## 1. ncRNA
     ## 2. length (19, 24)
@@ -302,8 +309,17 @@ if [ $bt2tag == "false" ]; then
     ## first two criterias, will be used as signature and be mapped to precursor
 
     ## Exit if no reads passed criteria
-    if [[ ! -s ${filename}-processed.fa ]];
+    if [[ ! -s $results_folder/${filename}/${filename}-processed.fa ]];
     then
+        echo "No reads passed criteria, reads will be mapped to genome and pipeline will exit.
+Criteria:
+1. no match in ncRNA database
+2. seq length >=19 and <= 24
+3. mapped to known mature.fa from mirbase or CPM>=10
+If you trimmed reads, check the reads length distribution above and
+confirm whether adapter sequence is correct." >> $results_folder/${filename}/script_err
+        echo "" >> $results_folder/${filename}/script_err
+        echo "Mapping each sample to genome and save bam files." >> $results_folder/${filename}/script_err
         ## Only map reads to genome then exit
         if [[ ! -z $input ]] || [[ -f $batch ]]; then
             if [[ $input =~ .gz$ && tag == "f" ]]; then
@@ -338,11 +354,7 @@ if [ $bt2tag == "false" ]; then
                 exit 1
             fi
         fi
-        echo "No reads passed criteria, reads will be mapped to genome and pipeline will exit here.
-Criteria:
-1. no match in ncRNA database
-2. seq length >=19 and <= 24
-3. mapped to known mature.fa from mirbase or CPM>=10" >> $results_folder/${filename}/script_err
+
         ## Delete temp files
         if [[ ! -z $batchTrimmed ]]; then
             awk 'BEGIN{a=""}{a=a" "$1}END{print "rm "a}' $batchTrimmed |
@@ -587,6 +599,7 @@ function process_each_sample {
         echo "The input format should be .fa, .fasta, .fq or .fastq, or formatTag should be provided."
         exit 1
     fi
+    echo "${sampleName}:" >> $results_folder/${filename}/script_err
     ## map to rfam_ncRNA, remove reads with hits
     bowtie -v 0 \
            -x $mirdp/index/rfam_index \
@@ -599,7 +612,7 @@ function process_each_sample {
            -x $bowtie_index \
            -p $thread \
            -S \
-           $bowtieFormatTag $inputFile |
+           $bowtieFormatTag $inputFile 2>> $results_folder/${filename}/script_err |
         awk '
             NR==FNR{a[$1]}
             NR>FNR{if($1~/^@/){print}else{if(!($1 in a)){print}}}
